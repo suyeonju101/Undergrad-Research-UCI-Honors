@@ -1,0 +1,168 @@
+---
+title: "Graphs"
+author: "Suyeon Ju"
+date: "4/24/2023"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(data.table)
+library(ggplot2)
+library(reshape2)
+library(plyr)
+```
+
+
+
+```{r}
+# Define the colors 
+series_colors <- c("red", "red", "green", "blue", "green", "blue")
+# Original code
+G <- log(c(100, 200, 500, 1000, 10000))
+BF = log(c(76.32, 286.849, 1600.319, 6268.242, 550000))
+P1 = log(c(9.931, 22.954, 85.537, 210.952, 16043.272))
+P2 = log(c(40.519, 37.972, 221.205, 416.302, 16643.011))
+
+DT = data.frame(G, BF, P1, P2)
+DT = melt(DT, id.vars = 'G', variable.name = 'series')
+
+x = c(100,200,500,1000,10000)
+Y_1 <- 5.49777 * (x + (-41319.3) / (700.769 - x))
+Y_2 <- 0.000155198 * (x * (331.966 + x)) + 8.70308
+Y_3 <- 0.000136889 * (x * (2157.97 + x))
+
+G1 <- log(c(100, 200, 500, 1000, 10000))
+DT_0 <- data.frame(G1, log(Y_1), log(Y_2), log(Y_3))
+DT_0 <- melt(DT_0, id.vars = 'G1', variable.name = 'group')
+
+ggplot(DT, aes(G, value, color=series)) +
+  geom_line(aes(group=series), linetype = "dashed") +
+  geom_point(size=0.8) +
+  geom_point(data=DT_0, aes(G1, value, color=group), size = 0.0) +
+  geom_line(data = DT_0, aes(G1, value, color=group)) +
+  ggtitle("Plot of Times by Sizes of Tables in Log Scale") +
+  xlab("number of rows") +
+  ylab("time (sec)") +
+  scale_color_manual(values = series_colors, name = "method", labels = c("bruteforce", "bruteforce: SR model", "parallel without splitting table", "parallel with splitting table", "parallel without splitting table: SR model", "parallel with splitting table: SR model")) +
+  guides(color = guide_legend(override.aes = list(
+    linetype = c("dashed", "solid", "dashed", "dashed", "solid", "solid")
+  ))) +
+  theme(legend.position = "right") +
+  theme_bw()
+```
+
+
+
+```{r}
+times = c(180.306, 174.019, 159.449, 146.37, 153.162, 142.924, 225.628, 177.66, 155.579, 162.989,
+          159.157, 148.593, 152.275, 126.311, 124.295, 121.308, 152.003, 128.176, 136.757, 127.204, 
+          220.791, 185.419, 175.278, 156.016, 150.554, 161.59, 186.106, 186.585, 174.588, 174.142)
+library = c('built-in', 'built-in', 'built-in', 'built-in', 'built-in', 'built-in', 'built-in', 'built-in', 'built-in', 'built-in', 'data.table', 'data.table', 'data.table', 'data.table', 'data.table', 'data.table', 'data.table', 'data.table', 'data.table', 'data.table', 'vroom', 'vroom', 'vroom', 'vroom', 'vroom', 'vroom', 'vroom', 'vroom', 'vroom', 'vroom')
+
+DT1 = data.frame(times, library)
+
+p_meds <- ddply(DT1, .(library), summarise, med = median(times))
+
+ggplot(DT1, aes(x=library, y=times, color=library)) + 
+  scale_y_continuous(trans='log10') +
+  geom_boxplot() +
+  geom_text(data = p_meds, aes(x = library, y = med, label=med), size = 3, vjust = +1.5) +
+  ylab("time (sec)") +
+  theme_bw()
+```
+
+
+
+```{r}
+times = c(220.791, 185.419, 175.278, 156.016, 150.554, 161.59, 186.106, 186.585, 174.588, 174.142,
+          61.063, 56.825, 56.693, 53.787, 48.704, 62.378, 60.94, 54.119, 61.53, 52.905, 
+          57.055, 63.733, 52.932, 60.95, 57.29, 73.212, 48.305, 52.339, 55.01, 59.977)
+usage_of_cores = c('64 cores in splitting \nand computing', 
+            '64 cores in splitting \nand computing',
+            '64 cores in splitting \nand computing',
+            '64 cores in splitting \nand computing',
+            '64 cores in splitting \nand computing',
+            '64 cores in splitting \nand computing',
+            '64 cores in splitting \nand computing',
+            '64 cores in splitting \nand computing',
+            '64 cores in splitting \nand computing',
+            '64 cores in splitting \nand computing',
+            '64 cores in splitting \n1 core in computing',
+            '64 cores in splitting \n1 core in computing',
+            '64 cores in splitting \n1 core in computing',
+            '64 cores in splitting \n1 core in computing',
+            '64 cores in splitting \n1 core in computing',
+            '64 cores in splitting \n1 core in computing',
+            '64 cores in splitting \n1 core in computing',
+            '64 cores in splitting \n1 core in computing',
+            '64 cores in splitting \n1 core in computing',
+            '64 cores in splitting \n1 core in computing',
+            '1 core in splitting \nand computing', 
+            '1 core in splitting \nand computing',
+            '1 core in splitting \nand computing',
+            '1 core in splitting \nand computing',
+            '1 core in splitting \nand computing',
+            '1 core in splitting \nand computing',
+            '1 core in splitting \nand computing',
+            '1 core in splitting \nand computing',
+            '1 core in splitting \nand computing',
+            '1 core in splitting \nand computing')
+
+DT1 = data.frame(times, usage_of_cores)
+
+p_meds <- ddply(DT1, .(usage_of_cores), summarise, med = median(times))
+
+ggplot(DT1, aes(x=usage_of_cores, y=times, color=usage_of_cores)) + 
+  scale_y_continuous(trans='log10') +
+  geom_boxplot() +
+  geom_text(data = p_meds, aes(x = usage_of_cores, y = med, label=med), size = 3, vjust = +1.2) +
+  ylab("time (sec)") +
+  xlab("usage of cores") +
+  theme_bw() +
+  guides(color=guide_legend(title="usage of cores")) +
+  scale_color_discrete(labels=c('64 cores in splitting and computing',
+                  '64 cores in splitting 1 core in computing',
+                  '1 core in splitting and computing'))
+```
+
+```{r}
+times = c(27.665, 35.097, 29.575, 26.711, 30.81, 29.049, 29.203, 29.729, 30.381, 22.881,
+          147.54, 136.551, 125.825, 125.706, 130.134, 518.524, 152.752, 130.445, 137.283, 126.893)
+usage_of_cores = c('1 core in computing', 
+            '1 core in computing',
+            '1 core in computing',
+            '1 core in computing',
+            '1 core in computing', 
+            '1 core in computing',
+            '1 core in computing',
+            '1 core in computing',
+            '1 core in computing', 
+            '1 core in computing',
+            '64 cores in computing',
+            '64 cores in computing',
+            '64 cores in computing',
+            '64 cores in computing',
+            '64 cores in computing',
+            '64 cores in computing',
+            '64 cores in computing',
+            '64 cores in computing',
+            '64 cores in computing',
+            '64 cores in computing')
+
+DT1 = data.frame(times, usage_of_cores)
+
+p_meds <- ddply(DT1, .(usage_of_cores), summarise, med = median(times))
+
+ggplot(DT1, aes(x=usage_of_cores, y=times, color=usage_of_cores)) + 
+  geom_boxplot() +
+  geom_text(data = p_meds, aes(x = usage_of_cores, y = med, label=med), size = 3, vjust = +2.5) +
+  scale_y_continuous(trans='log10') +
+  ylab("time (sec)") +
+  xlab("usage of cores") +
+  theme_bw() +
+  guides(color=guide_legend(title="usage of cores"))
+```
+
+
